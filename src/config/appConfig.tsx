@@ -32,6 +32,7 @@ export const APP_IDS: AppId[] = [
   "dsh",
   "agy",
   "omp",
+  "qoder",
 ];
 
 export const DEFAULT_VISIBLE_APPS: VisibleApps = {
@@ -49,6 +50,7 @@ export const DEFAULT_VISIBLE_APPS: VisibleApps = {
   dsh: true,
   agy: true,
   omp: true,
+  qoder: true,
 };
 
 /**
@@ -88,6 +90,7 @@ export const SKILLS_APP_IDS: AppId[] = [
   "dsh",
   "agy",
   "omp",
+  "qoder",
 ];
 
 export type ProxyAppId = Extract<
@@ -192,6 +195,7 @@ export const MCP_APP_IDS: McpAppId[] = [
   "dsh",
   "agy",
   "omp",
+  "qoder",
 ];
 
 export function isMcpAppId(appId: string): appId is McpAppId {
@@ -341,6 +345,13 @@ export const APP_ICON_MAP: Record<AppId, AppConfig> = {
       "bg-cyan-500/10 ring-1 ring-cyan-500/20 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400",
     badgeClass:
       "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 border-0 gap-1.5",
+  },
+  qoder: {
+    label: "Qoder",
+    icon: <ProviderIcon icon="qoder" name="Qoder" size={14} />,
+    activeClass: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+    badgeClass:
+      "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-0 gap-1.5",
   },
 };
 

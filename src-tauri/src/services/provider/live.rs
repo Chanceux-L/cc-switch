@@ -312,6 +312,7 @@ fn settings_contain_common_config(app_type: &AppType, settings: &Value, snippet:
         | AppType::Dsh
         | AppType::Agy
         | AppType::Omp
+        | AppType::Qoder
         | AppType::ClaudeDesktop => false,
     }
 }
@@ -392,7 +393,8 @@ pub(crate) fn remove_common_config_from_settings(
         | AppType::Dsh
         | AppType::ClaudeDesktop
         | AppType::Agy
-        | AppType::Omp => Ok(settings.clone()),
+        | AppType::Omp
+        | AppType::Qoder => Ok(settings.clone()),
     }
 }
 
@@ -731,6 +733,11 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
                 "Oh My Pi providers use the Oh My Pi provider service".to_string(),
             ));
         }
+        AppType::Qoder => {
+            return Err(AppError::InvalidInput(
+                "Qoder only supports MCP management and has no providers".to_string(),
+            ));
+        }
     }
     Ok(())
 }
@@ -892,7 +899,12 @@ pub fn sync_current_to_live(state: &AppState) -> Result<(), AppError> {
     for app_type in AppType::all() {
         if matches!(
             app_type,
-            AppType::Pi | AppType::Mcode | AppType::Kimi | AppType::Dsh | AppType::Omp
+            AppType::Pi
+                | AppType::Mcode
+                | AppType::Kimi
+                | AppType::Dsh
+                | AppType::Omp
+                | AppType::Qoder
         ) {
             continue;
         }
@@ -1060,6 +1072,9 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
         AppType::Omp => Err(AppError::InvalidInput(
             "Oh My Pi providers are read from Oh My Pi's native models file".to_string(),
         )),
+        AppType::Qoder => Err(AppError::InvalidInput(
+            "Qoder only supports MCP management and has no providers".to_string(),
+        )),
     }
 }
 
@@ -1181,7 +1196,8 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
         | AppType::Mcode
         | AppType::Kimi
         | AppType::Dsh
-        | AppType::Omp => {
+        | AppType::Omp
+        | AppType::Qoder => {
             unreachable!("additive mode apps are handled by early return")
         }
     };

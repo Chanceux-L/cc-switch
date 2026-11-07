@@ -267,6 +267,8 @@ impl Provider {
                 crate::omp_config::provider_base_url(settings).unwrap_or_default(),
                 crate::omp_config::resolve_usage_api_key(&str_at(settings.get("apiKey"))),
             ),
+            // Qoder only supports MCP management; no provider credentials exist.
+            AppType::Qoder => (String::new(), String::new()),
         };
 
         // Normalize like the JS-script path (extract_base_url_from_provider) so a

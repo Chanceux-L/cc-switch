@@ -744,12 +744,12 @@ describe("AppsPage concurrent CLI upgrades", () => {
       "hermes",
       "codex",
     ]);
-    // 只有已安装的能拖
+    // 只有已安装的能拖；qoder 不渲染工具行，行数比 APP_IDS 少一
     expect(
       within(
         screen.getByRole("region", { name: "appsPage.sectionInstalled" }),
       ).getAllByRole("button", { name: "appsPage.dragHandle" }),
-    ).toHaveLength(APP_IDS.length - 2);
+    ).toHaveLength(APP_IDS.length - 3);
     expect(
       within(
         screen.getByRole("region", { name: "appsPage.sectionNotInstalled" }),

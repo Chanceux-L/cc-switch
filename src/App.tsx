@@ -864,7 +864,8 @@ function App() {
           activeApp === "mcode" ||
           activeApp === "dsh" ||
           activeApp === "kimi" ||
-          activeApp === "agy"
+          activeApp === "agy" ||
+          activeApp === "qoder"
         )
           return;
         const conflicts = await checkEnvConflicts(activeApp);

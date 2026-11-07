@@ -7337,7 +7337,8 @@ impl ProviderService {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => Ok(String::new()),
+            | AppType::Agy
+            | AppType::Qoder => Ok(String::new()),
         }
     }
 
@@ -7360,7 +7361,8 @@ impl ProviderService {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => Ok(String::new()),
+            | AppType::Agy
+            | AppType::Qoder => Ok(String::new()),
         }
     }
 
@@ -8139,6 +8141,9 @@ impl ProviderService {
             AppType::Omp => {
                 crate::omp_config::validate_provider(&provider.id, &provider.settings_config)?;
             }
+            AppType::Qoder => {
+                // Qoder only supports MCP management; there are no provider settings.
+            }
         }
 
         // Validate and clean UsageScript configuration (common for all app types)
@@ -8365,7 +8370,12 @@ impl ProviderService {
                     .unwrap_or_default()
                     .into(),
             )),
-            AppType::OpenClaw | AppType::Hermes | AppType::Pi | AppType::Mcode | AppType::Omp => {
+            AppType::OpenClaw
+            | AppType::Hermes
+            | AppType::Pi
+            | AppType::Mcode
+            | AppType::Omp
+            | AppType::Qoder => {
                 // These native formats use apiKey and baseUrl directly on the object.
                 let api_key = provider
                     .settings_config

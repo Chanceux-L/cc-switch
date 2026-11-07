@@ -404,6 +404,11 @@ pub(crate) fn build_provider_from_request(
             settings
         }
         AppType::Omp => build_omp_settings(request, api_format)?,
+        AppType::Qoder => {
+            return Err(AppError::InvalidInput(
+                "Qoder only supports MCP management and cannot import providers".to_string(),
+            ));
+        }
     };
 
     // Build usage script configuration if provided

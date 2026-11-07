@@ -34,6 +34,18 @@ impl McpService {
             .map(|s| s.apps.clone())
             .unwrap_or_default();
 
+        // Qoder 的原生 settings.json 和数据库一起提交：任一步失败都恢复原样
+        let save_with_qoder = || {
+            if server.apps.qoder || prev_apps.qoder {
+                mcp::qoder::sync_and_commit(
+                    &server.id,
+                    server.apps.qoder.then_some(&server.server),
+                    || state.db.save_mcp_server(&server),
+                )
+            } else {
+                state.db.save_mcp_server(&server)
+            }
+        };
         // Keep our disabled OMP tombstone in step with edits while the checkbox is off.
         let managed_omp = server.apps.omp
             || prev_apps.omp
@@ -53,10 +65,10 @@ impl McpService {
                             .unwrap_or(&server.server),
                         server.apps.omp,
                     ),
-                    || state.db.save_mcp_server(&server),
+                    save_with_qoder,
                 )
             } else {
-                state.db.save_mcp_server(&server)
+                save_with_qoder()
             }
         };
         // MCode / Pi 的文件和数据库一起提交：任一步失败都恢复原样
@@ -146,11 +158,19 @@ impl McpService {
         let server = state.db.get_all_mcp_servers()?.shift_remove(id);
 
         if let Some(server) = server {
-            let delete_with_dsh = || {
-                if server.apps.dsh {
-                    mcp::dsh::sync_and_commit(id, None, || state.db.delete_mcp_server(id))
+            // Qoder 的原生 settings.json 和数据库一起提交：任一步失败都恢复原样
+            let delete_with_qoder = || {
+                if server.apps.qoder {
+                    mcp::qoder::sync_and_commit(id, None, || state.db.delete_mcp_server(id))
                 } else {
                     state.db.delete_mcp_server(id)
+                }
+            };
+            let delete_with_dsh = || {
+                if server.apps.dsh {
+                    mcp::dsh::sync_and_commit(id, None, delete_with_qoder)
+                } else {
+                    delete_with_qoder()
                 }
             };
             let delete_with_kimi = || {
@@ -247,6 +267,7 @@ impl McpService {
                 | AppType::Omp
                 | AppType::Pi
                 | AppType::Agy
+                | AppType::Qoder
         ) {
             if let Some(server) = state.db.get_all_mcp_servers()?.get(server_id) {
                 let spec = enabled.then_some(&server.server);
@@ -273,6 +294,8 @@ impl McpService {
                         mcp::omp::OmpChange::from_enabled(&server.server, enabled),
                         commit,
                     )?;
+                } else if app == AppType::Qoder {
+                    mcp::qoder::sync_and_commit(server_id, spec, commit)?;
                 } else {
                     mcp::pi::sync_and_commit(
                         &state.db,
@@ -310,6 +333,7 @@ impl McpService {
                     | AppType::Omp
                     | AppType::Pi
                     | AppType::Agy
+                    | AppType::Qoder
             ) {
                 continue; // Already written before saving the managed state.
             }
@@ -375,6 +399,7 @@ impl McpService {
             AppType::Pi => mcp::pi::sync(&server.id, Some(&server.server))?,
             AppType::Agy => mcp::agy::sync(&server.id, Some(&server.server))?,
             AppType::Omp => mcp::sync_single_server_to_omp(&server.id, &server.server)?,
+            AppType::Qoder => mcp::qoder::sync(&server.id, Some(&server.server))?,
         }
         Ok(())
     }
@@ -395,6 +420,7 @@ impl McpService {
                     | AppType::Omp
                     | AppType::Pi
                     | AppType::Agy
+                    | AppType::Qoder
             ) {
                 continue; // Already removed before deleting the managed record.
             }
@@ -433,6 +459,7 @@ impl McpService {
             AppType::Pi => mcp::pi::sync(id, None)?,
             AppType::Agy => mcp::agy::sync(id, None)?,
             AppType::Omp => mcp::remove_server_from_omp(id)?,
+            AppType::Qoder => mcp::qoder::sync(id, None)?,
         }
         Ok(())
     }
@@ -546,6 +573,7 @@ impl McpService {
                     | AppType::Omp
                     | AppType::Pi
                     | AppType::Agy
+                    | AppType::Qoder
             ) {
                 Self::remove_server_from_app(state, &server.id, app)
             } else {
@@ -855,7 +883,7 @@ impl McpService {
         let mut total = 0;
         let mut failures: Vec<String> = Vec::new();
 
-        let results: [(&str, Result<usize, AppError>); 12] = [
+        let results: [(&str, Result<usize, AppError>); 13] = [
             ("claude", Self::import_from_claude(state)),
             ("codex", Self::import_from_codex(state)),
             ("gemini", Self::import_from_gemini(state)),
@@ -868,6 +896,7 @@ impl McpService {
             ("agy", mcp::agy::import(state)),
             ("pi", mcp::pi::import(state)),
             ("omp", Self::import_from_omp(state)),
+            ("qoder", mcp::qoder::import(state)),
         ];
         for (app, result) in results {
             match result {

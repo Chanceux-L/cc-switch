@@ -31,6 +31,8 @@ pub struct McpApps {
     pub pi: bool,
     #[serde(default)]
     pub omp: bool,
+    #[serde(default)]
+    pub qoder: bool,
 }
 
 impl McpApps {
@@ -49,6 +51,7 @@ impl McpApps {
             AppType::Dsh => self.dsh,
             AppType::Pi => self.pi,
             AppType::Omp => self.omp,
+            AppType::Qoder => self.qoder,
             AppType::ClaudeDesktop => false,
             AppType::Agy => self.agy,
         }
@@ -71,6 +74,7 @@ impl McpApps {
             AppType::ClaudeDesktop => {}
             AppType::Agy => self.agy = enabled,
             AppType::Omp => self.omp = enabled,
+            AppType::Qoder => self.qoder = enabled,
         }
     }
 
@@ -113,6 +117,9 @@ impl McpApps {
         if self.omp {
             apps.push(AppType::Omp);
         }
+        if self.qoder {
+            apps.push(AppType::Qoder);
+        }
         apps
     }
 
@@ -130,6 +137,7 @@ impl McpApps {
             && !self.mcode
             && !self.pi
             && !self.omp
+            && !self.qoder
     }
 }
 
@@ -160,6 +168,8 @@ pub struct SkillApps {
     pub pi: bool,
     #[serde(default)]
     pub omp: bool,
+    #[serde(default)]
+    pub qoder: bool,
 }
 
 impl SkillApps {
@@ -179,6 +189,7 @@ impl SkillApps {
             AppType::OpenClaw => false,
             AppType::Agy => self.agy,
             AppType::Omp => self.omp,
+            AppType::Qoder => self.qoder,
             AppType::ClaudeDesktop => false,
         }
     }
@@ -199,6 +210,7 @@ impl SkillApps {
             AppType::OpenClaw => {}
             AppType::Agy => self.agy = enabled,
             AppType::Omp => self.omp = enabled,
+            AppType::Qoder => self.qoder = enabled,
             AppType::ClaudeDesktop => {} // Claude Desktop 3P profiles don't use CC Switch skill sync
         }
     }
@@ -242,6 +254,9 @@ impl SkillApps {
         if self.omp {
             apps.push(AppType::Omp);
         }
+        if self.qoder {
+            apps.push(AppType::Qoder);
+        }
         apps
     }
 
@@ -259,6 +274,7 @@ impl SkillApps {
             && !self.mcode
             && !self.pi
             && !self.omp
+            && !self.qoder
     }
 
     /// 仅启用指定应用（其他应用设为禁用）
@@ -483,6 +499,7 @@ pub enum AppType {
     Dsh,
     Agy,
     Omp,
+    Qoder,
 }
 
 impl AppType {
@@ -502,6 +519,7 @@ impl AppType {
             AppType::Dsh => "dsh",
             AppType::Agy => "agy",
             AppType::Omp => "omp",
+            AppType::Qoder => "qoder",
         }
     }
 
@@ -521,6 +539,9 @@ impl AppType {
                 | AppType::Kimi
                 | AppType::Dsh
                 | AppType::Omp
+                // Qoder 没有供应商体系：与累加式应用一样必须整体跳过 live 供应商读写，
+                // 否则会落进 import_default_config 等处的 unreachable!() 分支。
+                | AppType::Qoder
         )
     }
 
@@ -555,6 +576,7 @@ impl AppType {
             AppType::Dsh,
             AppType::Agy,
             AppType::Omp,
+            AppType::Qoder,
         ]
         .into_iter()
     }
@@ -580,10 +602,11 @@ impl FromStr for AppType {
             "dsh" | "deepseek-harness" => Ok(AppType::Dsh),
             "agy" | "antigravity" | "antigravity-cli" => Ok(AppType::Agy),
             "omp" | "oh-my-pi" | "oh_my_pi" | "ohmypi" => Ok(AppType::Omp),
+            "qoder" => Ok(AppType::Qoder),
             other => Err(AppError::localized(
                 "unsupported_app",
-                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp。"),
-                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp."),
+                format!("不支持的应用标识: '{other}'。可选值: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp, qoder。"),
+                format!("Unsupported app id: '{other}'. Allowed: claude, claude-desktop, codex, gemini, grokbuild, opencode, openclaw, hermes, pi, mcode, kimi, dsh, agy, omp, qoder."),
             )),
         }
     }
@@ -628,7 +651,8 @@ impl CommonConfigSnippets {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => None,
+            | AppType::Agy
+            | AppType::Qoder => None,
         }
     }
 
@@ -648,7 +672,8 @@ impl CommonConfigSnippets {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => {}
+            | AppType::Agy
+            | AppType::Qoder => {}
         }
     }
 }
@@ -980,7 +1005,8 @@ impl MultiAppConfig {
             | AppType::Kimi
             | AppType::Dsh
             | AppType::Omp
-            | AppType::Agy => return Ok(false),
+            | AppType::Agy
+            | AppType::Qoder => return Ok(false),
         };
 
         prompts.insert(id, prompt);
@@ -1029,7 +1055,8 @@ impl MultiAppConfig {
                 | AppType::Kimi
                 | AppType::Dsh
                 | AppType::Omp
-                | AppType::Agy => continue, // Pi didn't exist in v3.6.x, skip
+                | AppType::Agy
+                | AppType::Qoder => continue, // Pi didn't exist in v3.6.x, skip
             };
 
             for (id, entry) in old_servers {
